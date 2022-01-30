@@ -1,5 +1,6 @@
 import smtplib
 import ssl
+import threading
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
@@ -9,7 +10,8 @@ from pathlib import Path
 from pf_flask_mail.common.pffm_config import PFFMConfig
 
 
-class PFFMSendMail:
+class PFFMSendMail(threading.Thread):
+    close_connection: bool = True
     smtp_server: smtplib.SMTP_SSL = None
     config: PFFMConfig = None
     _email_content: MIMEMultipart = MIMEMultipart('alternative')
@@ -17,7 +19,7 @@ class PFFMSendMail:
 
     def __init__(self, config: PFFMConfig):
         self.config = config
-        self._init_server()
+        threading.Thread.__init__(self)
 
     def _init_server(self):
         try:
@@ -84,8 +86,9 @@ class PFFMSendMail:
         else:
             self._email_to.append(bcc)
 
-    def send(self, close_connection: bool = True):
+    def run(self):
         try:
+            self._init_server()
             sender = self.config.smtpSenderEmail
             if not sender:
                 sender = self.config.smtpUser
@@ -93,5 +96,12 @@ class PFFMSendMail:
         except Exception as e:
             raise e
         finally:
-            if close_connection:
+            if self.close_connection:
                 self.smtp_server.close()
+
+    def send(self, close_connection: bool = True, use_thread: bool = False):
+        self.close_connection = close_connection
+        if use_thread:
+            self.start()
+        else:
+            self.run()
