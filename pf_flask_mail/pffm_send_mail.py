@@ -86,9 +86,19 @@ class PFFMSendMail(threading.Thread):
         else:
             self._email_to.append(bcc)
 
+    def check_or_init_server(self):
+        try:
+            if not self.smtp_server:
+                self._init_server()
+            else:
+                self.smtp_server.noop()
+            return
+        except Exception as ignore:
+            self._init_server()
+
     def run(self):
         try:
-            self._init_server()
+            self.check_or_init_server()
             sender = self.config.smtpSenderEmail
             if not sender:
                 sender = self.config.smtpUser
@@ -97,11 +107,12 @@ class PFFMSendMail(threading.Thread):
             raise e
         finally:
             if self.close_connection:
-                self.smtp_server.close()
+                self.smtp_server.quit()
 
     def send(self, close_connection: bool = True, use_thread: bool = False):
         self.close_connection = close_connection
         if use_thread:
+            self.close_connection = True
             self.start()
         else:
             self.run()
