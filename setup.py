@@ -18,7 +18,7 @@ def get_dependencies():
 
 
 setup(
-    name='PF-Flask-Main',
+    name='PF-Flask-Mail',
     version='1.0.0',
     url='https://github.com/problemfighter/pf-flask-mail',
     license='Apache 2.0',
